@@ -1,0 +1,2 @@
+# study
+Learn about JavaScript
