@@ -271,3 +271,131 @@ class Foo {
     console.log(this.#sum)
   }
 }
+
+/*
+  Class的继承
+  可以通过extends关键字实现继承，让子类继承父类的属性和方法
+  extends的写法比ES5的原型链继承，要清晰和方便很多
+*/ 
+class Point {
+  constructor(x, y) {
+    this.x = x
+    this.y = y
+  }
+  toString() {
+    return '(' + this.x + ',' + this.y + ')'
+  }
+}
+// 子类ColorPoint继承父类Point
+class ColorPoint extends Point{
+  constructor(x, y, color) {
+    super(x, y) // 意思是调用父类的constructor(x, y)
+    this.color = color
+  }
+  toString() {
+    // 调用父类的toString方法
+    return this.color + ' ' + super.toString() 
+  }
+}
+/*
+  ES6规定，子类必须在constructor()方法中调用super(),否则会报错
+  这是因为子类自己的this对象，必须先通过父类的构造函数完成塑造，得到于父类同样的实例属性和方法
+  然后再对其进行加工，添加子类自己的实例属性和方法
+  如果不调用super(),子类就得不到自己的this对象
+*/
+
+class Point {}
+class ColorPoint extends Point{
+  constructor(){}
+}
+let cp = new ColorPoint() // ReferenceError
+
+// 为什么子类的构造函数，一定要调用super()？
+/*
+  原因就在于ES6的继承机制，与ES5完全不同
+  ES5的继承机制，是先创造一个独立的子类的实例对象，然后再将父类的方法添加到这个对象上面
+  即“实例在前，继承在后”
+  ES6的继承机制，则是先将父类的属性和方法，加到一个空的对象上面，然后再将该对象作为子类的实例
+  即“继承在前，实例在后”
+  这就是为什么ES6的继承必须先调用super()方法
+  因为这一步会生成一个继承父类的this对象
+  没有这一步就无法继承父类
+*/
+
+// 注意 这意味着新建子类实例时，父类的构造函数必定会先运行一次
+class Foo {
+  constructor() {
+    console.log(1)
+  }
+}
+class Bar extends Foo {
+  constructor() {
+    console.log(this) // ReferenceError
+    super()
+    console.log(2)
+  }
+}
+let bar = new Bar()
+// 1
+// 2
+
+// 另一个需要注意的地方是，在子类的构造函数中，只有调用了super()后，才可以使用this关键字，否则会报错
+// 这是因为子类实例的构建，必须先完成父类的继承，只有super()方法才能让子类实例继承父类
+
+/*
+  如果子类没有定义constructor方法
+  这个方法会默认添加，并且里面会调用super()
+  也就是说，不管有没有显式定义，任何一个子类都有constructor()方法
+*/
+class ColorPoint extends Point {
+}
+// 等同于
+class ColorPoint extends Point {
+  constructor(...args) {
+    super(...args)
+  }
+}
+cp = new ColorPoint(25, 8, 'red')
+cp instanceof ColorPoint // true
+cp instanceof Point // true
+
+/*
+  父类所有的属性和方法，都会被子类继承
+  除了私有属性和方法
+*/
+class Foo {
+  #p = 1
+  #m() {
+    console.log('hello')
+  }
+}
+class Bar extends Foo {
+  constructor() {
+    super()
+    // console.log(this.#p) 报错
+    // this.#m() 报错
+  }
+}
+
+/*
+  父类的静态属性和静态方法 会被子类继承
+  静态属性是通过浅拷贝实现继承的
+*/
+class A {
+  static foo = {
+    num: 100
+  }
+}
+class B extends A {
+  constructor() {
+    super()
+    B.foo.num--
+  }
+}
+const b = new B()
+B.foo.num // 99
+A.foo.num // 99
+/*
+  由于是浅拷贝，如果父类的静态属性是一个对象，那么子类的静态属性也会指向这个对象
+  因为浅拷贝只会拷贝对象的内存地址
+*/ 
