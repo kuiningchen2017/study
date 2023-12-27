@@ -32,6 +32,10 @@ btnDom.onclick = function() {
   （1）无法取消，一旦新建它就会立即执行，无法中途取消
   （2）其次，如果不设置回调函数，Promise内部抛出的错误，不会反应到外部
 */
+/*
+  ES6规定Promise是一个构造函数，用来生成promise实例
+  promise接受一个函数作为参数，该函数的两个参数分别是两个函数，resolve和reject
+*/
 var promise = new Promise((resolve, reject) => {
   // ... some code
   if (true) { /* 异步操作成功 */
@@ -76,6 +80,41 @@ console.log('hi')
 // resolved
 }
 
+// 异步加载图片的例子
+function loadImageAsync(url) {
+  return new Promise((resolve, reject) => {
+    /*
+      var myImage = new Image(100, 200);
+      myImage.src = "picture.jpg";
+      document.body.appendChild(myImage);
+    */
+    const image = new Image()
+    // onload 加载完成的回调函数
+    image.onload = function() {
+      resolve(image)
+    }
+    image.onerror = function() {
+      reject(new Error('Could not load image at ' + url))
+    }
+    image.src = url
+  })
+}
+
+// reject函数的参数通常是Error对象的实例
+/*
+  一般来说，调用resolve或reject后，Promise的使命就完成了，后继操作应该放到then方法里面，而不应该直接卸载resolve或reject后面
+  所以，最好在他们前面加上return语句 return resolve(xxx)
+*/
+new Promise((resolve, reject) => {
+  resolve(1)
+  console.log(2)
+}).then(res => {
+  console.log(res)
+})
+// 2
+// 1
+
+
 /*
   用Promise对象实现Ajax操作的例子
 */
@@ -96,6 +135,22 @@ const getJSON = function(url) {
     client.setRequestHeader('Accept', 'application/json')
     client.send()
   })
+  const promise2 = new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest()
+    xhr.open('get', url)
+    xhr.onreadystatechange = function() {
+      if (this.readyState === 4) {
+        if (this.status >= 200 && this.status <= 300) {
+          resolve(this.responese)
+        } else {
+          reject(new Error(this.statusText))
+        }
+      }
+    }
+    xhr.responseType = 'json'
+    xhr.setRequestHeader('Accept', 'application/json')
+    xhr.send()
+  })
   return promise
 }
 getJSON(url).then(res => {
@@ -104,7 +159,13 @@ getJSON(url).then(res => {
   console.error(err)
 })
 
-// Promise.prototype.then
+
+// Promise.prototype.then()
+/*
+  Promise的实例具有then方法，也就是说，then方法定义在原型对象Promise.prototype上的
+  它的作用是为Promise实例添加状态改变时的回调函数。
+*/
+
 getJSON('/post/1.json').then(res => {
   return getJSON(res.commentUrl)
 }).then(comments => {
@@ -113,9 +174,11 @@ getJSON('/post/1.json').then(res => {
   console.log("error: ", err)
 })
 
+
 /*
   一般来说，不要在then()方法里面定义rejected状态的回调函数（即then()方法的第二个参数）
   总是使用catch()方法
+  理由是 这种写法可以捕获前面then方法执行中的错误，也更接近同步的写法（try/catch）
 */
 promise.then(value => {
   console.log(value)
@@ -123,7 +186,35 @@ promise.then(value => {
   console.log(err)
 })
 
+/*
+  下面这个函数产生的Promise对象，内部有语法错误，浏览器运行到这一行，会打印出错误
+  ReferenceError：x is not defined
+  但是不会退出进程、终止脚本执行，2秒之后还是会输出123
+  这就是说Promise内部的错误不会影响到Promise外部的代码
+  通俗的说法就是‘Promise会吃掉错误’
+*/
+const someAsyncThing = function() {
+  return new Promise((resolve, reject) => {
+    resolve(x + 2) // 这一行会报错 因为x is not defined没有声明
+  })
+}
+someAsyncThing().then(() => {
+  console.log('everything is great')
+})
+setTimeout(() => {console.log(123), 2000})
+
+
 // Promise.prototype.finally
+/*
+  finally方法的回调函数不接受任何参数,这意味着没有办法知道
+  前面的Promise状态到底是fulfilled还是rejected
+  这表明，finally方法里面的操作，应该是与状态无关的，不依赖于Promise的执行结果
+*/
+server.listen(port)
+.then(() => {
+  // ... 最后使用finally关闭服务器
+}).finally(server.stop)
+
 promise.then(value => {
 
 }).catch(e => {
@@ -132,6 +223,7 @@ promise.then(value => {
   // 不管promise最后的状态 执行完then或catch后 一定会执行
   // finally方法的回调函数不接受任何参数
 })
+
 
 /*
   Promise.all()方法用于将多个Promise实例，包装成一个新的Promise实例
@@ -144,6 +236,7 @@ promise.then(value => {
 const promises = [2,3,5,7,11,13].map((id) => {
   return getJSON('/post/' + id + '.json')
 })
+// 只有6个promise的状态都变为fullfiled或者其中一个变为rejected，才会调用all后面的回调函数
 Promise.all(promises).then((posts) =>{
   // ..
 }).catch(e => {
