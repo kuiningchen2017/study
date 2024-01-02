@@ -39,9 +39,13 @@ btnDom.onclick = function() {
 var promise = new Promise((resolve, reject) => {
   // ... some code
   if (true) { /* 异步操作成功 */
-    resolve('success') // 将Promise对象的状态从'未完成'变成'成功'
+    // resolve函数的作用 将Promise对象的状态从'未完成'变成'成功'
+    // 然后它是在异步操作成功时调用，并将异步操作的结果作为参数传递出去
+    resolve('success') 
   } else {
-    reject('fail') // 将Promise对象的状态从'未完成'变成'失败'
+    // reject函数的作用是 将Promise对象的状态从'未完成'变成'失败'
+    // 然后它是在异步操作失败时调用，并将异步操作报出的错误作为参数传递出去
+    reject('fail')
   }
 })
 // Promise实例生成后，可以用then方法分别指定resolved状态和rejected状态的回调函数
@@ -99,6 +103,13 @@ function loadImageAsync(url) {
     image.src = url
   })
 }
+loadImageAsync('https://p7.itc.cn/images01/20201104/87d0aa991d454770813dcb01260c2ed0.jpeg')
+  .then(response => {
+    // response <img src='https://p7.itc.cn/images01/20201104/87d0aa991d454770813dcb01260c2ed0.jpeg'>
+    console.log('response: ', response)
+  }).catch(error => {
+    console.log('error: ', error)
+  })
 
 // reject函数的参数通常是Error对象的实例
 /*
@@ -117,6 +128,8 @@ new Promise((resolve, reject) => {
 
 /*
   用Promise对象实现Ajax操作的例子
+  getJSON是对 XMLHttpRequest 对象的封装
+  用于发出一个针对 JSON 数据的 HTTP 请求，并且返回一个Promise对象
 */
 const getJSON = function(url) {
   const promise = new Promise((resolve, reject) => {
@@ -165,7 +178,7 @@ getJSON(url).then(res => {
   Promise的实例具有then方法，也就是说，then方法定义在原型对象Promise.prototype上的
   它的作用是为Promise实例添加状态改变时的回调函数。
 */
-
+// 采用链式调用then 第一个then方法指定的回调函数返回的又是一个Promise对象
 getJSON('/post/1.json').then(res => {
   return getJSON(res.commentUrl)
 }).then(comments => {
@@ -200,6 +213,8 @@ const someAsyncThing = function() {
 }
 someAsyncThing().then(() => {
   console.log('everything is great')
+}).catch(err => {
+  console.log('error: ', err) // ReferenceError: x is not defined
 })
 setTimeout(() => {console.log(123), 2000})
 
@@ -231,7 +246,7 @@ promise.then(value => {
   接受一个数组作为参数，p1、p2、p3都是promise的实例，如果不是，就会调用Promise.resolve()方法将参数转为Promise实例
   p的状态有两种情况
   （1）只有p1、p2、p3的状态都变为fulfilled，p的状态才会变成fulfilled，此时p1、p2、p3的返回值组成一个数组，传递给p的回调函数
-  （2）只要p1、p2、p3之中有一个被rejected，p的状态才会变成rejected，此时第一个被jeject的实例的返回值，回传给p的回调函数
+  （2）只要p1、p2、p3之中有一个被rejected，p的状态就会变成rejected，此时第一个被jeject的实例的返回值，回传给p的回调函数
 */
 const promises = [2,3,5,7,11,13].map((id) => {
   return getJSON('/post/' + id + '.json')
